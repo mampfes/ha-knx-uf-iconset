@@ -1,12 +1,19 @@
 # KNX User Forum Icon Set
 
-[KNX User Forum Icon Set](https://knx-user-forum.de/forum/playground/knx-uf-iconset) for Home Assistant. The icon set contains more than 900 icons for home automation.
+Icon set from [KNX User Forum](https://knx-user-forum.de/forum/playground/knx-uf-iconset) for Home Assistant. The icon set contains more than 900 icons for home automation.
 
 ## Installation
 
 1. Ensure that [HACS](https://hacs.xyz) is installed.
 2. Open `Frontend` tab in HACS and install "KNX User Forum Icon Set".
 3. Reload browser cache.
+
+### Manual Installation
+
+1. Copy `ha-knx-uf-iconset.js` from the `dist` directory of this repository into the subdirectory `www` of the Home Assistant configuration directory (where your `configuration.yaml` resides).
+2. Open `Configuration -> Lovelace Dashboards -> Resources`.
+3. Add a new resource with URL = `/local/ha-knx-uf-iconset.js` and Resource type = `JavaScript Module`.
+4. Reload your browser cache.
 
 ## Usage
 
