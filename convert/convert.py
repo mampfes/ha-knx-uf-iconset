@@ -53,7 +53,8 @@ def main():
     p = re.compile(r'\bd="([^"]*)"')
 
     i = 0
-    for svg_src_filename in Path(SOURCE_DIR).glob("*.svg"):
+    source_dir = Path(__file__).parent / SOURCE_DIR
+    for svg_src_filename in Path(source_dir).glob("*.svg"):
         print(f"Processing {svg_src_filename.stem}")
         # get destination svg file
         svg_dest_filename = dest_dir / svg_src_filename.name

@@ -10,7 +10,7 @@ const ICONS = {
 
 async function getIcon(name) {
 	return {
-		path: ICONS[name] || ICONS.default,
+		path: ICONS[name] || ICONS.test_question_mark,
 		viewBox: "0 0 361 361"
 	};
 }

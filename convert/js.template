@@ -5,7 +5,7 @@ PLACEHOLDER_ICON_LIST
 
 async function getIcon(name) {
 	return {
-		path: ICONS[name] || ICONS.default,
+		path: ICONS[name] || ICONS.test_question_mark,
 		viewBox: "PLACEHOLDER_VIEW_BOX"
 	};
 }
