@@ -18,7 +18,7 @@ icons = {}
 def getInkscapeVersion() :
     # Calling "inkscape -V" returns a string like "Inkscape 1.0.1 (3bc2e813f5, 2020-09-07)""
     result = subprocess.run([INKSCAPE_EXE, "-V"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    return re.match(f"{INKSCAPE_NAME} (\d+)\.(\d+)\.(\d+)", result.stdout).groups()
+    return re.match(f"{INKSCAPE_NAME} (\\d+)\\.(\\d+)\.(\\d+)", result.stdout).groups()
 
 def convertSvg(file) :
     """Convert SVG into Home Assistant compatible format
@@ -52,7 +52,6 @@ def main():
     # regular expression to find paths in svg
     p = re.compile(r'\bd="([^"]*)"')
 
-    i = 0
     source_dir = Path(__file__).parent / SOURCE_DIR
     for svg_src_filename in Path(source_dir).glob("*.svg"):
         print(f"Processing {svg_src_filename.stem}")
@@ -76,12 +75,6 @@ def main():
         icons[svg_dest_filename.stem] = matches[0]
         svg_file.close()
 
-        i = i + 1
-        if i == 5:
-            break
-
-    print(icons)
-
     # update template javascript file
     js_template_filename = Path(__file__).parent / JS_TEMPLATE
     js_template_file = open(js_template_filename, "r")
@@ -96,7 +89,6 @@ def main():
     js_dest_file = open(js_dest_filename, "w")
     js_dest_file.write(js)
     js_dest_file.close()
-    exit()
 
 
 if __name__ == "__main__":
