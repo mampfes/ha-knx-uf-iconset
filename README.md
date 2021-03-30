@@ -1,6 +1,6 @@
 # KNX User Forum Icon Set
 
-[KNX User Forum Icon Set](https://knx-user-forum.de/forum/playground/knx-uf-iconset) for Home Assistant.
+[KNX User Forum Icon Set](https://knx-user-forum.de/forum/playground/knx-uf-iconset) for Home Assistant. The icon set contains more than 900 icons for home automation.
 
 ## Installation
 
