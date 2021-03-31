@@ -1,7 +1,7 @@
-const ICONSET_NAME = "PLACEHOLDER_ICONSET_NAME"
+const ICONSET_NAME = "PLACEHOLDER_ICONSET_NAME";
 const ICONS = {
 PLACEHOLDER_ICON_LIST
-}
+};
 
 async function getIcon(name) {
 	return {
