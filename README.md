@@ -2,6 +2,10 @@
 
 Icon set from [KNX User Forum](https://knx-user-forum.de/forum/playground/knx-uf-iconset) for Home Assistant. The icon set contains more than 900 icons for home automation.
 
+## Examples
+
+![Examples](examples.png)
+
 ## Installation
 
 1. Ensure that [HACS](https://hacs.xyz) is installed.
