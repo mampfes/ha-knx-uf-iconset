@@ -1,1 +1,3 @@
 /convert/svg
+.mypy_cache/
+node_modules/

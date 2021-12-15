@@ -1,10 +1,9 @@
 #!/usr/bin/python3
 
-import subprocess
 import re
-from shutil import copyfile
+import subprocess
 from pathlib import Path
-
+from shutil import copyfile
 
 INKSCAPE_EXE = "inkscape"
 INKSCAPE_NAME = "Inkscape"
@@ -18,7 +17,7 @@ icons = {}
 def getInkscapeVersion() :
     # Calling "inkscape -V" returns a string like "Inkscape 1.0.1 (3bc2e813f5, 2020-09-07)""
     result = subprocess.run([INKSCAPE_EXE, "-V"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    return re.match(f"{INKSCAPE_NAME} (\\d+)\\.(\\d+)\.(\\d+)", result.stdout).groups()
+    return re.match(f"{INKSCAPE_NAME} (\\d+)\\.(\\d+)\\.(\\d+)", result.stdout).groups()
 
 def convertSvg(file) :
     """Convert SVG into Home Assistant compatible format
@@ -30,7 +29,7 @@ def convertSvg(file) :
     Step 3: Convert strokes to paths
     Step 4: Save file
     """
-    actions = "EditSelectAll; " + 10*"SelectionUnGroup; " + "SelectionCombine; StrokeToPath; FileSave"
+    actions = "EditSelectAll; " + 10*"SelectionUnGroup; " + "StrokeToPath; SelectionCombine; FileSave"
     result = subprocess.run([INKSCAPE_EXE, "--batch-process", f"--actions={actions}", file], capture_output=True)
     assert result.returncode == 0, ""
 
@@ -65,7 +64,7 @@ def main():
         convertSvg(svg_dest_filename)
 
         # read path from svg
-        svg_file = open(svg_dest_filename, "r")
+        svg_file = open(svg_dest_filename)
         matches = p.findall(svg_file.read())
 
         assert len(matches) > 0, f"No path found in file {svg_dest_filename.name}"
@@ -77,11 +76,11 @@ def main():
 
     # update template javascript file
     js_template_filename = Path(__file__).parent / JS_TEMPLATE
-    js_template_file = open(js_template_filename, "r")
+    js_template_file = open(js_template_filename)
     js = js_template_file.read()
     js_template_file.close()
     js = js.replace("PLACEHOLDER_ICONSET_NAME", "kuf")
-    js = js.replace("PLACEHOLDER_VIEW_BOX", "0 0 361 361")
+    js = js.replace("PLACEHOLDER_VIEW_BOX", "50 50 260 260")
     js = js.replace("PLACEHOLDER_ICON_LIST", insertIconList(icons))
     
     # write to destination file

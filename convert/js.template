@@ -10,5 +10,15 @@ async function getIcon(name) {
 	};
 }
 
-window.customIconsets = window.customIconsets || {};
-window.customIconsets[ICONSET_NAME] = getIcon;
+async function getIconList() {
+    return Object.keys(ICONS).map(icon => ({name: icon}));
+}
+
+if (!window.frontendVersion || window.frontendVersion <= 20211027.0){
+    window.customIconsets = window.customIconsets || {};
+    window.customIconsets[ICONSET_NAME] = getIcon;
+}else{
+    // new enough to support getIconlist
+    window.customIcons = window.customIcons || {};
+    window.customIcons[ICONSET_NAME] = { getIcon, getIconList };
+}
