@@ -29,14 +29,16 @@ def convertSvg(file) :
     Step 3: Convert strokes to paths
     Step 4: Save file
     """
-    actions = "EditSelectAll; " + 10*"SelectionUnGroup; " + "StrokeToPath; SelectionCombine; FileSave"
+    actions = "EditSelectAll; " + 10*"SelectionUnGroup; " + "ObjectToPath; StrokeToPath; SelectionCombine; FileSave"
     result = subprocess.run([INKSCAPE_EXE, "--batch-process", f"--actions={actions}", file], capture_output=True)
     assert result.returncode == 0, ""
 
 def insertIconList(icons):
     result = ""
     for k,v in sorted(icons.items()):
-        result += "\t" + f"'{k}': '{v}',\n"
+        # Remove newlines, tabs, and extra spaces from SVG paths
+        cleaned_v = ' '.join(v.split())
+        result += "\t" + f"'{k}': '{cleaned_v}',\n"
     return result
 
 def main():
@@ -65,14 +67,31 @@ def main():
 
         # read path from svg
         svg_file = open(svg_dest_filename)
-        matches = p.findall(svg_file.read())
+        svg_content = svg_file.read()
+        svg_file.close()
 
+        # remove hidden groups (e.g. car inside garage_door icons) before extracting paths
+        # this drops any <g ... style="...display:none..."> ... </g> blocks
+        svg_content = re.sub(r'<g[^>]*style="[^\"]*display\s*:\s*none[^\"]*"[^>]*>.*?</g>', "", svg_content, flags=re.IGNORECASE | re.DOTALL)
+
+        matches = p.findall(svg_content)
+
+        # special handling for audio_rec: ObjectToPath doesn't convert circle to path
+        if len(matches) == 0 and svg_dest_filename.stem == "audio_rec":
+            print(f"File {svg_dest_filename.name} contains no path, using hardcoded circle path")
+            cx = 181.333
+            cy = 180.167
+            r = 63.5
+            d = f"M {cx - r} {cy} a {r} {r} 0 1 0 {2*r} 0 a {r} {r} 0 1 0 {-2*r} 0"
+            icons[svg_dest_filename.stem] = d
+            continue
+        
         assert len(matches) > 0, f"No path found in file {svg_dest_filename.name}"
         if len(matches) > 1:
-            print(f"File {svg_dest_filename.name} contains multiple paths: count={len(matches)}")
+            print(f"File {svg_dest_filename.name} contains multiple paths: count={len(matches)}, combining them")
 
-        icons[svg_dest_filename.stem] = matches[0]
-        svg_file.close()
+        # Combine all paths into a single path string
+        icons[svg_dest_filename.stem] = ' '.join(matches)
 
     # update template javascript file
     js_template_filename = Path(__file__).parent / JS_TEMPLATE
