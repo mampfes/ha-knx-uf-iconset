@@ -4,6 +4,7 @@ import re
 import subprocess
 from pathlib import Path
 from shutil import copyfile
+import xml.etree.ElementTree as ET
 
 INKSCAPE_EXE = "inkscape"
 INKSCAPE_NAME = "Inkscape"
@@ -19,31 +20,80 @@ def getInkscapeVersion() :
     result = subprocess.run([INKSCAPE_EXE, "-V"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     return re.match(f"{INKSCAPE_NAME} (\\d+)\\.(\\d+)\\.(\\d+)", result.stdout).groups()
 
+def removeHiddenElements(file):
+    """Remove hidden elements from SVG before processing """
+    try:
+        ET.register_namespace('', 'http://www.w3.org/2000/svg')
+        tree = ET.parse(file)
+        root = tree.getroot()
+    except Exception as e:
+        print(f"ERROR: Failed to parse SVG file {file}: {e}")
+        raise
+
+    def is_hidden(element):
+        style = element.get('style', '')
+        display = element.get('display', '')
+        visibility = element.get('visibility', '')
+
+        if display == 'none':
+            return True
+        if visibility == 'hidden':
+            return True
+        if 'display:none' in style.replace(' ', ''):
+            return True
+        if 'visibility:hidden' in style.replace(' ', ''):
+            return True
+
+        return False
+
+    def remove_hidden_recursive(parent):
+        for child in list(parent):
+            if is_hidden(child):
+                parent.remove(child)
+            else:
+                remove_hidden_recursive(child)
+
+    remove_hidden_recursive(root)
+    tree.write(file, encoding='utf-8', xml_declaration=True)
+
 def convertSvg(file) :
     """Convert SVG into Home Assistant compatible format
 
     Home Assistant can only handle SVG paths. Therefore 
 
-    Step 1: Ungroup all paths
-    Step 2: Combine all paths into a single path
-    Step 3: Convert strokes to paths
-    Step 4: Save file
+    Step 1: Remove hidden elements
+    Step 2: Ungroup all paths
+    Step 3: Combine all paths into a single path
+    Step 4: Convert strokes to paths
+    Step 5: Save file
     """
-    actions = "EditSelectAll; " + 10*"SelectionUnGroup; " + "ObjectToPath; StrokeToPath; SelectionCombine; FileSave"
-    result = subprocess.run([INKSCAPE_EXE, "--batch-process", f"--actions={actions}", file], capture_output=True)
-    assert result.returncode == 0, ""
+    removeHiddenElements(file)
+
+    actions = (
+        "select-all:all; " +
+        10*"selection-ungroup; select-all:all; " +
+        "object-to-path; select-all:all; " +
+        "object-stroke-to-path; select-all:all; " +
+        "path-combine; " +
+        "export-plain-svg"
+    )
+    result = subprocess.run([
+        INKSCAPE_EXE,
+        str(file),
+        f"--actions={actions}",
+        f"--export-filename={file}"
+    ], capture_output=True)
+    assert result.returncode == 0, f"Inkscape failed: {result.stderr.decode() if result.stderr else ''}"
 
 def insertIconList(icons):
     result = ""
     for k,v in sorted(icons.items()):
-        # Remove newlines, tabs, and extra spaces from SVG paths
-        cleaned_v = ' '.join(v.split())
-        result += "\t" + f"'{k}': '{cleaned_v}',\n"
+        result += "\t" + f"'{k}': '{v}',\n"
     return result
 
 def main():
     version = getInkscapeVersion()
-    assert int(version[0]) >= 1, "Inkscape major version should be >= 1"
+    assert int(version[0]) >= 1 and int(version[1]) >= 3, "Inkscape major version should be >= 1.3"
 
     dest_dir = Path(__file__).parent / SVG_TEMP_DIR
 
@@ -67,31 +117,14 @@ def main():
 
         # read path from svg
         svg_file = open(svg_dest_filename)
-        svg_content = svg_file.read()
-        svg_file.close()
+        matches = p.findall(svg_file.read())
 
-        # remove hidden groups (e.g. car inside garage_door icons) before extracting paths
-        # this drops any <g ... style="...display:none..."> ... </g> blocks
-        svg_content = re.sub(r'<g[^>]*style="[^\"]*display\s*:\s*none[^\"]*"[^>]*>.*?</g>', "", svg_content, flags=re.IGNORECASE | re.DOTALL)
-
-        matches = p.findall(svg_content)
-
-        # special handling for audio_rec: ObjectToPath doesn't convert circle to path
-        if len(matches) == 0 and svg_dest_filename.stem == "audio_rec":
-            print(f"File {svg_dest_filename.name} contains no path, using hardcoded circle path")
-            cx = 181.333
-            cy = 180.167
-            r = 63.5
-            d = f"M {cx - r} {cy} a {r} {r} 0 1 0 {2*r} 0 a {r} {r} 0 1 0 {-2*r} 0"
-            icons[svg_dest_filename.stem] = d
-            continue
-        
         assert len(matches) > 0, f"No path found in file {svg_dest_filename.name}"
         if len(matches) > 1:
-            print(f"File {svg_dest_filename.name} contains multiple paths: count={len(matches)}, combining them")
+            print(f"File {svg_dest_filename.name} contains multiple paths: count={len(matches)}")
 
-        # Combine all paths into a single path string
-        icons[svg_dest_filename.stem] = ' '.join(matches)
+        icons[svg_dest_filename.stem] = matches[0]
+        svg_file.close()
 
     # update template javascript file
     js_template_filename = Path(__file__).parent / JS_TEMPLATE
